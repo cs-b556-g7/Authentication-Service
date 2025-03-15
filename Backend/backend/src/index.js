@@ -1,19 +1,13 @@
 import dotenv from 'dotenv';
-// Load environment variables from .env file
-dotenv.config();
 // Import required modules 
 import express from 'express';
 import passport from 'passport';
 import session from 'express-session';
 import GoogleStrategy from 'passport-google-oauth20';
 
+// Load environment variables from .env file
+dotenv.config();
 dotenv.config({ path: './path/to/.env' });
-// require('dotenv').config();
-
-// const express = require('express');
-// const passport = require('passport');
-// const session = require('express-session');
-// const GoogleStrategy = require('passport-google-oauth20').Strategy;
 
 const app = express();
 
@@ -43,9 +37,21 @@ passport.deserializeUser((user, done) => {
   done(null, user);
 });
 
+// Middleware to serve static files and parse request bodies
+app.set('views', './src/views');
+app.set('view engine', 'ejs'); // Set view engine to EJS (optional, if you want to render views)
+// app.use(express.json()); // Middleware to parse JSON bodies
+// app,use(cookieParser()); 
+
+
+
 // Define routes
 app.get('/', (req, res) => {
-  res.send('<a href="/auth/google">Login with Google</a>');
+  res.send('WELCOME TO THE HOME PAGE!');
+});
+
+app.get('/login', (req, res) => {
+  res.render('login');
 });
 
 app.get(
@@ -54,12 +60,15 @@ app.get(
 );
 
 app.get('/auth/google/callback', passport.authenticate('google', { failureRedirect: '/' }), (req, res) => {
-  // Successful authentication, redirect home.
-  res.redirect('/profile');
+  // Successful authentication, redirect to the dashboard.
+  res.redirect('/dashboard');
 });
 
-app.get('/profile', (req, res) => {
-  res.send('Welcome ${req.user.displayName}');
+app.get('/dashboard', (req, res) => {
+  if (!req.user) {
+      return res.redirect('/login'); // Redirect to login if user is not authenticated
+  }
+  res.render('dashboard', { user: req.user }); // Pass user data to the view
 });
 
 app.get('/logout', (req, res) => {
