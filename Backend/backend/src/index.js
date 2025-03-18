@@ -43,8 +43,6 @@ app.set('view engine', 'ejs'); // Set view engine to EJS (optional, if you want 
 // app.use(express.json()); // Middleware to parse JSON bodies
 // app,use(cookieParser()); 
 
-
-
 // Define routes
 app.get('/', (req, res) => {
   res.send('WELCOME TO THE HOME PAGE!');
@@ -59,9 +57,37 @@ app.get(
   passport.authenticate('google', { scope: ['profile', 'email'] })
 );
 
-app.get('/auth/google/callback', passport.authenticate('google', { failureRedirect: '/' }), (req, res) => {
-  // Successful authentication, redirect to the dashboard.
-  res.redirect('/dashboard');
+import { createClient } from '@supabase/supabase-js'; // Import Supabase client
+
+// Initializing
+const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
+
+app.get('/auth/google/callback', passport.authenticate('google', { failureRedirect: '/' }), async (req, res) => {
+  try {
+    // Extract information
+    const { id, displayName, emails } = req.user;
+    const email = emails && emails[0]?.value;
+
+    // subpase API part
+    const { error } = await supabase
+      .from('users')
+      .upsert({
+        username: 'random',
+        email,
+        password: id, // Store Google OAuth ID in the password column
+      }, { onConflict: 'email' }); // columns dones't exist in supabase
+
+    if (error) {
+      console.error('Error inserting user into Supabase:', error);
+    }
+
+    console.log('User added to Supabase:', email);
+
+    res.redirect('/dashboard');
+  } catch (err) {
+    console.error('Error during Google OAuth callback:', err);
+    res.status(500).send('Internal Server Error');
+  }
 });
 
 app.get('/dashboard', (req, res) => {
