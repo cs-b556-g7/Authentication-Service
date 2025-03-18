@@ -72,7 +72,7 @@ app.get('/auth/google/callback', passport.authenticate('google', { failureRedire
     const { error } = await supabase
       .from('users')
       .upsert({
-        username: 'random',
+        username: displayName,
         email,
         password: id, // Store Google OAuth ID in the password column
       }, { onConflict: 'email' }); // columns dones't exist in supabase
