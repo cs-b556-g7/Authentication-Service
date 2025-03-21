@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import authRoutes from './routes/authRoutes.js';
+import loginRoute from "./routes/login.js";  
 
 dotenv.config();
 
@@ -11,9 +12,11 @@ const PORT = process.env.PORT || 3000;
 // Middleware
 app.use(cors());
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 // Routes
 app.use('/api/auth', authRoutes);
+app.use("/api/login" , loginRoute);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
