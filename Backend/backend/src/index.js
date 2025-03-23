@@ -83,7 +83,7 @@ app.get('/auth/google/callback', passport.authenticate('google', { failureRedire
 
     console.log('User added to Supabase:', email);
 
-    res.redirect('/dashboard');
+    res.redirect('http://localhost:5173/dashboard');
   } catch (err) {
     console.error('Error during Google OAuth callback:', err);
     res.status(500).send('Internal Server Error');
