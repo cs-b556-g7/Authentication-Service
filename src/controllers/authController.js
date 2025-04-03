@@ -5,7 +5,6 @@ import { supabase } from '../config/supabase.js';
 const SALT_ROUNDS = 10;
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 
-// Helper function to generate JWT
 const generateToken = (userId) => {
   return jwt.sign({ userId }, JWT_SECRET, { expiresIn: '24h' });
 };
@@ -14,7 +13,6 @@ export const register = async (req, res) => {
   try {
     const { username, email, password, role } = req.body;
 
-    // Check if user already exists
     const { data: existingUser } = await supabase
       .from('users')
       .select('id')

@@ -15,8 +15,8 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Routes
-app.use('/api/auth', authRoutes);
-app.use("/api/login" , loginRoute);
+app.use('/', authRoutes);
+app.use("/" , loginRoute);
 
 // Error handling middleware
 app.use((err, req, res, next) => {

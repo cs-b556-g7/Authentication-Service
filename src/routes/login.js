@@ -6,5 +6,5 @@ import { validateMiddleware } from "../middlewares/LoginValidateMiddleware.js";
 
 const router = express.Router();
 
-router.post("/" ,validateMiddleware, login);
+router.post("/login" ,validateMiddleware, login);
 export default router;
