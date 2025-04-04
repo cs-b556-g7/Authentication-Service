@@ -1,9 +1,16 @@
-import { body } from 'express-validator';
+import { registerSchema } from './registerSchema.js';
 
-// Validation middleware for registration
-export const registerValidation = [
-  body('username').trim().isLength({ min: 3 }).withMessage('Username must be at least 3 characters long'),
-  body('email').isEmail().withMessage('Please enter a valid email'),
-  body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters long'),
-  body('role').isIn(['user', 'venue_owner']).withMessage('Invalid role')
-]; 
+export const authValidation = (req, res, next) => {
+  try {
+    req.body = registerSchema.parse(req.body);
+    next();
+  } catch (error) {
+    return res.status(400).json({
+      error: 'Validation failed',
+      issues: error.errors.map(e => ({
+        field: e.path[0],
+        message: e.message
+      }))
+    });
+  }
+};
