@@ -2,10 +2,16 @@ import { z } from "zod";
 
 const loginSchema = z.object({
   email: z.string().email("Invalid email format").nonempty("Email is required"),
-  password: z.string().min(8, "Password must be at least 8 characters long").nonempty("Password is required"),
+  password: z
+    .string()
+    .min(8, "Password must be at least 8 characters long")
+    .nonempty("Password is required"),
+  role: z.enum(["user", "venue_owner"], {
+    errorMap: () => ({ message: "Role must be 'user' or 'venue_owner'" })
+  })
 });
 
-export const validateMiddleware = (req, res, next) => {
+export const validateLogin = (req, res, next) => {
   const result = loginSchema.safeParse(req.body);
 
   if (!result.success) {
@@ -18,6 +24,6 @@ export const validateMiddleware = (req, res, next) => {
     });
   }
 
-  req.body = result.data; // Optional: sanitized input
+  req.body = result.data; // ✅ Clean data
   next();
 };

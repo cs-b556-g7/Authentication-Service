@@ -5,7 +5,6 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-const SALT_ROUNDS = 10;
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 const COOKIE_EXPIRY = 24 * 60 * 60 * 1000; // 1 day
 
@@ -15,7 +14,10 @@ const generateToken = (userId, username, role) => {
 
 export const login = async (req, res) => {
   try {
-    // 1️⃣ Auto-login via token
+    // 🔍 Debug body
+    console.log("🟢 Incoming login request body:", req.body);
+
+    // 1️⃣ Auto-login if token provided
     const token = req.headers.authorization?.split(' ')[1];
 
     if (token) {
@@ -46,13 +48,20 @@ export const login = async (req, res) => {
       }
     }
 
-    // 2️⃣ Fresh login using email & password
-    const { email, password } = req.body;
+    // 2️⃣ Fresh login
+    const { email, password, role } = req.body;
 
-    if (!email || !password) {
-      return res.status(400).json({ error: 'Email and password are required' });
+    // ✅ Validate all fields
+    if (
+      !email ||
+      !password ||
+      typeof role !== 'string' ||
+      !['user', 'venue_owner'].includes(role)
+    ) {
+      return res.status(400).json({ error: 'Email, password, and valid role are required' });
     }
 
+    // 🔍 Fetch user by email
     const { data: user, error: userError } = await supabase
       .from('users')
       .select('id, username, email, password, role_id, roles(name)')
@@ -63,19 +72,28 @@ export const login = async (req, res) => {
       return res.status(401).json({ error: 'Invalid email or password' });
     }
 
+    // 🔒 Check password
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
       return res.status(401).json({ error: 'Invalid email or password' });
     }
 
+    // 🔒 Check role match
+    if (user.roles.name !== role) {
+      return res.status(403).json({ error: `Role mismatch. Please login as ${user.roles.name}` });
+    }
+
+    // 🪙 Generate JWT
     const newToken = generateToken(user.id, user.username, user.roles.name);
 
+    // 🍪 Set token as cookie
     res.cookie('authToken', newToken, {
       httpOnly: true,
       sameSite: 'Strict',
-      maxAge: COOKIE_EXPIRY,
+      maxAge: COOKIE_EXPIRY
     });
 
+    // ✅ Respond with user data
     res.status(200).json({
       message: 'Login successful',
       token: newToken,
