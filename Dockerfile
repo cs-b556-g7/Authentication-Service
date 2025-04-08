@@ -1,11 +1,18 @@
+# Use Node 18 base image
 FROM node:18-alpine
 
+# Set working dir
 WORKDIR /app
+
+# Copy and install deps
 COPY package*.json ./
 RUN npm install
 
+# Copy code
 COPY . .
-ENV NODE_ENV=production
+
+# Expose port
 EXPOSE 10000
 
-CMD ["node", "index.js"]
+# Start
+CMD ["npm", "start"]
