@@ -3,16 +3,15 @@ import { supabase } from '../config/supabase.js';
 
 const SALT_ROUNDS = 10;
 
+
 export const registerUser = async (req, res) => {
   try {
     const { username, email, password, role } = req.body;
 
-    // ✅ Validate input
     if (!username || !email || !password || !role) {
-      return res.status(400).json({ error: 'All fields are required' });
+      return res.status(400).json({ success: false, message: 'All fields are required' });
     }
 
-    // ✅ Check if user already exists
     const { data: existingUser, error: checkError } = await supabase
       .from('users')
       .select('id')
@@ -20,14 +19,13 @@ export const registerUser = async (req, res) => {
       .maybeSingle();
 
     if (checkError) {
-      return res.status(500).json({ error: 'Database error while checking user' });
+      return res.status(500).json({ success: false, message: 'Database error while checking user' });
     }
 
     if (existingUser) {
-      return res.status(400).json({ error: 'User already exists' });
+      return res.status(400).json({ success: false, message: 'User already exists' });
     }
 
-    // ✅ Fetch role_id from roles table
     const { data: roleData, error: roleError } = await supabase
       .from('roles')
       .select('id')
@@ -35,13 +33,11 @@ export const registerUser = async (req, res) => {
       .maybeSingle();
 
     if (roleError || !roleData) {
-      return res.status(400).json({ error: 'Invalid role provided' });
+      return res.status(400).json({ success: false, message: 'Invalid role provided' });
     }
 
-    // ✅ Hash password
     const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
 
-    // ✅ Insert new user
     const { data: newUser, error: insertError } = await supabase
       .from('users')
       .insert([
@@ -56,16 +52,23 @@ export const registerUser = async (req, res) => {
       .maybeSingle();
 
     if (insertError) {
-      return res.status(500).json({ error: 'Failed to register user' });
+      return res.status(500).json({ success: false, message: 'Failed to register user' });
     }
 
-    // ✅ Success
-    res.status(201).json({
-      success: true
+    // ✅ Success response with user (no password)
+    return res.status(201).json({
+      success: true,
+      message: 'Registration successful',
+      user: {
+        id: newUser.id,
+        username: newUser.username,
+        email: newUser.email,
+        role
+      }
     });
-    
+
   } catch (err) {
     console.error('Registration Error:', err);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ success: false, message: 'Internal server error' });
   }
 };

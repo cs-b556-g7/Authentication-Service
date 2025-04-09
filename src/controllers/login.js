@@ -14,10 +14,6 @@ const generateToken = (userId, username, role) => {
 
 export const login = async (req, res) => {
   try {
-    // 🔍 Debug body
-    console.log("🟢 Incoming login request body:", req.body);
-
-    // 1️⃣ Auto-login if token provided
     const token = req.headers.authorization?.split(' ')[1];
 
     if (token) {
@@ -31,37 +27,30 @@ export const login = async (req, res) => {
           .single();
 
         if (error || !user) {
-          return res.status(401).json({ error: 'Invalid or expired token' });
+          return res.status(401).json({ success: false, message: 'Invalid or expired token' });
         }
 
         return res.status(200).json({
+          success: true,
           message: 'Auto-login successful',
           user: {
             id: user.id,
             username: user.username,
             email: user.email,
-            role: user.roles.name
+            role: user.roles.name,
           }
         });
       } catch (err) {
-        return res.status(401).json({ error: 'Invalid or expired token' });
+        return res.status(401).json({ success: false, message: 'Invalid or expired token' });
       }
     }
 
-    // 2️⃣ Fresh login
     const { email, password, role } = req.body;
 
-    // ✅ Validate all fields
-    if (
-      !email ||
-      !password ||
-      typeof role !== 'string' ||
-      !['user', 'venue_owner'].includes(role)
-    ) {
-      return res.status(400).json({ error: 'Email, password, and valid role are required' });
+    if (!email || !password || typeof role !== 'string' || !['user', 'venue_owner'].includes(role)) {
+      return res.status(400).json({ success: false, message: 'Email, password, and valid role are required' });
     }
 
-    // 🔍 Fetch user by email
     const { data: user, error: userError } = await supabase
       .from('users')
       .select('id, username, email, password, role_id, roles(name)')
@@ -69,32 +58,28 @@ export const login = async (req, res) => {
       .single();
 
     if (userError || !user) {
-      return res.status(401).json({ error: 'Invalid email or password' });
+      return res.status(401).json({ success: false, message: 'Invalid email or password' });
     }
 
-    // 🔒 Check password
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
-      return res.status(401).json({ error: 'Invalid email or password' });
+      return res.status(401).json({ success: false, message: 'Invalid email or password' });
     }
 
-    // 🔒 Check role match
     if (user.roles.name !== role) {
-      return res.status(403).json({ error: `Role mismatch. Please login as ${user.roles.name}` });
+      return res.status(403).json({ success: false, message: `Role mismatch. Please login as ${user.roles.name}` });
     }
 
-    // 🪙 Generate JWT
     const newToken = generateToken(user.id, user.username, user.roles.name);
 
-    // 🍪 Set token as cookie
     res.cookie('authToken', newToken, {
       httpOnly: true,
       sameSite: 'Strict',
-      maxAge: COOKIE_EXPIRY
+      maxAge: COOKIE_EXPIRY,
     });
 
-    // ✅ Respond with user data
-    res.status(200).json({
+    return res.status(200).json({
+      success: true,
       message: 'Login successful',
       token: newToken,
       user: {
@@ -107,6 +92,6 @@ export const login = async (req, res) => {
 
   } catch (error) {
     console.error('Login error:', error);
-    res.status(500).json({ error: 'Login failed' });
+    res.status(500).json({ success: false, message: 'Internal server error' });
   }
 };
