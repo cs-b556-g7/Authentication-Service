@@ -5,7 +5,6 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-const SALT_ROUNDS = 10;
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 const COOKIE_EXPIRY = 24 * 60 * 60 * 1000; // 1 day
 
@@ -15,7 +14,6 @@ const generateToken = (userId, username, role) => {
 
 export const login = async (req, res) => {
   try {
-    // 1️⃣ Auto-login via token
     const token = req.headers.authorization?.split(' ')[1];
 
     if (token) {
@@ -29,28 +27,28 @@ export const login = async (req, res) => {
           .single();
 
         if (error || !user) {
-          return res.status(401).json({ error: 'Invalid or expired token' });
+          return res.status(401).json({ success: false, message: 'Invalid or expired token' });
         }
 
         return res.status(200).json({
+          success: true,
           message: 'Auto-login successful',
           user: {
             id: user.id,
             username: user.username,
             email: user.email,
-            role: user.roles.name
+            role: user.roles.name,
           }
         });
       } catch (err) {
-        return res.status(401).json({ error: 'Invalid or expired token' });
+        return res.status(401).json({ success: false, message: 'Invalid or expired token' });
       }
     }
 
-    // 2️⃣ Fresh login using email & password
-    const { email, password } = req.body;
+    const { email, password, role } = req.body;
 
-    if (!email || !password) {
-      return res.status(400).json({ error: 'Email and password are required' });
+    if (!email || !password || typeof role !== 'string' || !['user', 'venue_owner'].includes(role)) {
+      return res.status(400).json({ success: false, message: 'Email, password, and valid role are required' });
     }
 
     const { data: user, error: userError } = await supabase
@@ -60,12 +58,16 @@ export const login = async (req, res) => {
       .single();
 
     if (userError || !user) {
-      return res.status(401).json({ error: 'Invalid email or password' });
+      return res.status(401).json({ success: false, message: 'Invalid email or password' });
     }
 
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
-      return res.status(401).json({ error: 'Invalid email or password' });
+      return res.status(401).json({ success: false, message: 'Invalid email or password' });
+    }
+
+    if (user.roles.name !== role) {
+      return res.status(403).json({ success: false, message: `Role mismatch. Please login as ${user.roles.name}` });
     }
 
     const newToken = generateToken(user.id, user.username, user.roles.name);
@@ -76,7 +78,8 @@ export const login = async (req, res) => {
       maxAge: COOKIE_EXPIRY,
     });
 
-    res.status(200).json({
+    return res.status(200).json({
+      success: true,
       message: 'Login successful',
       token: newToken,
       user: {
@@ -89,6 +92,6 @@ export const login = async (req, res) => {
 
   } catch (error) {
     console.error('Login error:', error);
-    res.status(500).json({ error: 'Login failed' });
+    res.status(500).json({ success: false, message: 'Internal server error' });
   }
 };

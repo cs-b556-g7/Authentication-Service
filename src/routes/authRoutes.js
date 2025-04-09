@@ -1,11 +1,9 @@
 // src/routes/authRoutes.js
 import express from 'express';
-import { registerUser } from '../controllers/registerUser.js';
-import { registerVenueOwner } from '../controllers/registerVenueOwner.js';
-import { authValidation } from '../middlewares/authValidation.js';
+import { registerUser } from '../controllers/registerUsers.js';
+import { validateRegister } from '../middlewares/RegisterValidateMiddleware.js';
 
 const router = express.Router();
 
-router.post('/register/user', authValidation, registerUser);
-router.post('/register/venue-owner', authValidation, registerVenueOwner);
+router.post('/register', validateRegister, registerUser);
 export default router;
