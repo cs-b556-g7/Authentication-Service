@@ -8,12 +8,12 @@ const loginSchema = z.object({
     .nonempty("Password is required"),
   role: z.enum(["user", "venue_owner"], {
     errorMap: () => ({ message: "Role must be 'user' or 'venue_owner'" })
-  })
+  }),
+  captchaToken: z.string().min(1, 'Captcha token is required')
 });
 
 export const validateLogin = (req, res, next) => {
   const result = loginSchema.safeParse(req.body);
-
   if (!result.success) {
     return res.status(400).json({
       error: "Validation failed",
@@ -24,6 +24,6 @@ export const validateLogin = (req, res, next) => {
     });
   }
 
-  req.body = result.data; // ✅ Clean data
+  req.body = result.data;
   next();
 };
