@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken';
 import { supabase } from '../config/supabase.js';
 import dotenv from 'dotenv';
 import { Client as DuoClient } from '@duosecurity/duo_universal';
+import { verifyCaptcha } from '../utils/verifyCaptcha.js';
 
 dotenv.config();
 
@@ -53,7 +54,16 @@ export const login = async (req, res) => {
       }
     }
 
-    const { email, password, role } = req.body;
+    const { email, password, role, captchaToken } = req.body;
+
+    if (!captchaToken) {
+      return res.status(400).json({ success: false, message: 'CAPTCHA token is required' });
+    }
+
+    const isHuman = await verifyCaptcha(captchaToken);
+    if (!isHuman) {
+      return res.status(403).json({ success: false, message: 'CAPTCHA verification failed' });
+    }
 
     if (!email || !password || typeof role !== 'string' || !['user', 'venue_owner'].includes(role)) {
       return res.status(400).json({ success: false, message: 'Email, password, and valid role are required' });

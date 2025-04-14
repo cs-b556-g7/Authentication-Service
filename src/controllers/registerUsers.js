@@ -1,12 +1,22 @@
 import bcrypt from 'bcryptjs';
 import { supabase } from '../config/supabase.js';
+import { verifyCaptcha } from '../utils/verifyCaptcha.js';
 
 const SALT_ROUNDS = 10;
 
 
 export const registerUser = async (req, res) => {
   try {
-    const { username, email, password, role } = req.body;
+    const { username, email, password, role, captchaToken } = req.body;
+
+    if (!captchaToken) {
+      return res.status(400).json({ success: false, message: 'CAPTCHA token is required' });
+    }
+
+    const isHuman = await verifyCaptcha(captchaToken);
+    if (!isHuman) {
+      return res.status(403).json({ success: false, message: 'CAPTCHA verification failed' });
+    }
 
     if (!username || !email || !password || !role) {
       return res.status(400).json({ success: false, message: 'All fields are required' });
