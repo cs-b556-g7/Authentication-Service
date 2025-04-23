@@ -162,5 +162,5 @@ export const duoRedirectHandler = (req, res) => {
     return res.status(400).send('Missing Duo code or state');
   }
 
-  res.redirect(`http://localhost:5173/duo/callback?duo_code=${duo_code}&state=${state}`);
+  res.redirect(`https://blue-rock-0d2af4e10.6.azurestaticapps.net/duo/callback?duo_code=${duo_code}&state=${state}`);
 };
