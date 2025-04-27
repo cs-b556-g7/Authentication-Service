@@ -62,6 +62,7 @@ export const registerUser = async (req, res) => {
       .maybeSingle();
 
     if (insertError) {
+      console.log("insert error: ", insertError)
       return res.status(500).json({ success: false, message: 'Failed to register user' });
     }
 
