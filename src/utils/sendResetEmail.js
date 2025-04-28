@@ -4,7 +4,7 @@ export const sendResetEmail = async (email, username, resetLink) => {
   console.log("send reset email util")
   console.log("request::", {email, username, resetLink})
   try {
-    const response = await axios.post('http://localhost:3002/api/send-reset-email', {
+    const response = await axios.post('https://email-service-latest-ps53.onrender.com/api/send-reset-email', {
       to: email,
       username,
       resetLink
